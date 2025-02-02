@@ -22,68 +22,68 @@ public class Robot extends TimedRobot {
   private final Field2d m_field = new Field2d();
   private boolean isdriving = false;
 
-  // Vaules for the Robot
-  private final double drive_deadband = 0.2;
-  private final double roller_speed = 0.5;
-  private final double drive_speed = 1;
-  // Simulated Position
-    private double posX = 0.0, posY = 0.0, heading = 0.0;
-
+  // Values for the Robot
+  private final double drive_deadband = 0.2; // Deadband for the drive
+  private final double roller_speed = 0.5; // Roller speed setting
+  private final double drive_speed = 1; // Drive speed setting
   
+  // Simulated Position
+  private double posX = 0.0, posY = 0.0, heading = 0.0;
 
- // VictorSPX 
-WPI_VictorSPX m_leftMotor_victor = new WPI_VictorSPX(5);
-WPI_VictorSPX m_rightMotor_victor = new WPI_VictorSPX(6);
-WPI_VictorSPX m_leftMotor_victor_two = new WPI_VictorSPX(2);
-WPI_VictorSPX m_rightMotor_victor_two = new WPI_VictorSPX(3);
- // Roller 
-PWMVictorSPX m_roller_victor = new PWMVictorSPX(4);
-DifferentialDrive m_robotDrive_two = new DifferentialDrive(m_leftMotor_victor, m_rightMotor_victor); // VictorSPX Drive Train
+  // Motor Controllers for the Drive Train
+  WPI_VictorSPX m_leftMotor_victor = new WPI_VictorSPX(5);
+  WPI_VictorSPX m_rightMotor_victor = new WPI_VictorSPX(6);
+  WPI_VictorSPX m_leftMotor_victor_two = new WPI_VictorSPX(2);
+  WPI_VictorSPX m_rightMotor_victor_two = new WPI_VictorSPX(3);
+  
+  // Roller Motor Controller
+  PWMVictorSPX m_roller_victor = new PWMVictorSPX(4);
+  
+  // DifferentialDrive for the Drive Train
+  DifferentialDrive m_robotDrive_two = new DifferentialDrive(m_leftMotor_victor, m_rightMotor_victor); // VictorSPX Drive Train
 
-// Xbox Controller
-XboxController m_driverController = new XboxController(0);
-
-
+  // Xbox Controller for user input
+  XboxController m_driverController = new XboxController(0);
 
   @Override
   public void robotInit() {
-    m_timer.start();
-  
+    m_timer.start(); // Start the timer for autonomous timing
 
-    // DriveTrain Followers 
+    // Set motor followers for drive train
     m_leftMotor_victor_two.follow(m_leftMotor_victor);
     m_rightMotor_victor_two.follow(m_rightMotor_victor);
 
-    // DriveTrain Inversion
+    // Set motor inversion for proper movement direction
     m_rightMotor_victor.setInverted(true);
     m_rightMotor_victor_two.setInverted(true);
 
-    // DriveTrain Deadband & DifferentialDrive
+    // Set deadband for drive train and create DifferentialDrive object
     m_robotDrive_two = new DifferentialDrive(m_leftMotor_victor, m_rightMotor_victor);
     m_robotDrive_two.setDeadband(drive_deadband);
 
-    // Add Feild to SmartDashboard
+    // Add Field visualization to SmartDashboard for simulation or debugging
     SmartDashboard.putData("Field", m_field);
-    SmartDashboard.putData("Driving", m_robotDrive_two); // ??
-    SmartDashboard.putData("Roller", m_roller_victor); // ??
-    SmartDashboard.putBoolean("Auto", isdriving);
-    SmartDashboard.putNumber("Auto Time(Secs)", m_timer.get());
-
+    SmartDashboard.putData("Driving", m_robotDrive_two); // Drive train
+    SmartDashboard.putData("Roller", m_roller_victor); // Roller motor
+    SmartDashboard.putBoolean("Auto", isdriving); // Display auto mode status
+    SmartDashboard.putNumber("Auto Time(Secs)", m_timer.get()); // Display time in autonomous mode
   }
 
   @Override
   public void robotPeriodic() {
-    CommandScheduler.getInstance().run();
-    // Count the Time On
+    CommandScheduler.getInstance().run(); // Run scheduled commands
+
+    // Display robot runtime information on SmartDashboard
     SmartDashboard.putNumber("Time On (Secs)", Timer.getFPGATimestamp());
     SmartDashboard.putNumber("Roller Speed RPM", m_roller_victor.getVoltage());
-     // Simulated Odometry Update
+    
+    // Update simulated odometry on SmartDashboard
     m_field.setRobotPose(new Pose2d(posX, posY, Rotation2d.fromDegrees(heading)));
   }
 
   @Override
   public void disabledInit() {
-    CommandScheduler.getInstance().cancelAll();
+    CommandScheduler.getInstance().cancelAll(); // Cancel all running commands when disabled
   }
 
   @Override
@@ -94,68 +94,49 @@ XboxController m_driverController = new XboxController(0);
 
   @Override
   public void autonomousInit() {
-    m_timer.reset();
-    m_timer.start();
+    m_timer.reset(); // Reset the autonomous timer
+    m_timer.start(); // Start the timer
   }
 
   @Override
   public void autonomousPeriodic() {
-    double time = m_timer.get();
+    double time = m_timer.get(); // Get the current time in autonomous
 
+    // Autonomous routine: Move forward for 2 seconds, then perform actions
     if (time < 2.0) {
-      m_robotDrive_two.arcadeDrive(drive_speed, 0.0);
-      posX += drive_speed * 0.02; // Simulate forward movement
+      m_robotDrive_two.arcadeDrive(drive_speed, 0.0); // Move forward
+      posX += drive_speed * 0.04; // Simulate forward movement
       isdriving = true;
-    } else if (time < 3.0) {
-      m_robotDrive_two.arcadeDrive(0.0, 0.0);
-      m_roller_victor.set(roller_speed);
-    } else if(time < 5.0) {
-      m_roller_victor.set(0.0);
-      m_robotDrive_two.arcadeDrive(-drive_speed, 0.0);
-        posX -= drive_speed * 0.02; // Simulate backward movement
+    } else if (time < 4.0) {
+      m_robotDrive_two.arcadeDrive(0.0, 0.0); // Stop driving
+      m_roller_victor.set(roller_speed); // Activate roller
+    } else if(time < 7.0) {
+      m_roller_victor.set(0.0); // Deactivate roller
+      m_robotDrive_two.arcadeDrive(-drive_speed, 0.0); // Move backward
+      posX -= drive_speed * 0.04; // Simulate backward movement
+     } 
+      else if (time < 9.0) {
+        m_robotDrive_two.arcadeDrive(0.0, 0.0); // Stop driving
+        isdriving = false;
     }
   }
-
-
-//   @Override
-//   public void autonomousInit() {
-//     m_timer.start();
-//   m_rightMotor_victor.set(drive_speed);
-//   m_leftMotor_victor.set(drive_speed);
-//     isdriving = true;
-//     m_timer.delay(2.0);
-//     m_rightMotor_victor.set(0);
-//     m_leftMotor_victor.set(0);
-//     m_roller_victor.set(roller_speed);
-//     m_timer.delay(1);
-//     m_roller_victor.set(0.0);
-//     m_timer.stop();
-//     }
-  
-  
-
-//   @Override
-//   public void autonomousPeriodic() {
-//   }
 
   @Override
   public void autonomousExit() {}
 
   @Override
-  public void teleopInit() {
-
-  }
+  public void teleopInit() {}
 
   @Override
   public void teleopPeriodic() {
- // Score L1 with Roller
+    // Score L1 with Roller when A button is pressed
     if (m_driverController.getAButton()) {
       m_roller_victor.set(roller_speed);
     } else {
-      m_roller_victor.set(0.0);
+      m_roller_victor.set(0.0); // Stop roller if not pressed
     }
 
-// Drive Train
+    // Drive the robot based on the controller input
     m_robotDrive_two.arcadeDrive(-m_driverController.getLeftY(), -m_driverController.getRightX());
   }
 
@@ -164,7 +145,7 @@ XboxController m_driverController = new XboxController(0);
 
   @Override
   public void testInit() {
-    CommandScheduler.getInstance().cancelAll();
+    CommandScheduler.getInstance().cancelAll(); // Cancel all commands at the start of test mode
   }
 
   @Override
